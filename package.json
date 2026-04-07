@@ -4,9 +4,6 @@
   "description": "Run selected code or entire file directly in Fresh (PowerShell, Python, Node.js, Bash, etc.). Similar to PowerShell ISE.",
   "main": "main.js",
   "type": "plugin",
-  "fresh": {
-    "entry": "main.js"
-  },
   "keywords": ["runner", "execute", "powershell", "python", "terminal"],
   "author": "ramaddk",
   "license": "MIT",
