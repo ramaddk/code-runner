@@ -2,7 +2,7 @@
 // Run selected code or entire file (like PowerShell ISE)
 // Supports PowerShell, Python, Node.js, Bash, and more
 
-const activate = (api: any) => {
+function activate(api) {
   const runCode = async () => {
     const config = api.editor.getConfig("code-runner");
     if (!config?.enabled) {
@@ -22,7 +22,7 @@ const activate = (api: any) => {
       code = buffer.getTextInRange(selection);
     }
 
-    let cmd: string[] = [];
+    let cmd = [];
     const shell = config.defaultShell || "pwsh";
 
     switch (shell) {
@@ -63,7 +63,7 @@ const activate = (api: any) => {
       }
 
       if (result.exit_code === 0) {
-        api.editor.setStatus(`✓ Finished successfully`);
+        api.editor.setStatus("✓ Finished successfully");
       } else {
         api.editor.setStatus(`✗ Finished with code ${result.exit_code}`);
       }
@@ -85,10 +85,10 @@ const activate = (api: any) => {
   api.editor.bindKey("ctrl+enter", "code-runner.run");
 
   api.editor.setStatus("Code Runner plugin loaded ✓");
-};
+}
 
-const deactivate = () => {
+function deactivate() {
   // Cleanup if needed
-};
+}
 
-export default { activate, deactivate };
+module.exports = { activate, deactivate };
