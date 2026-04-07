@@ -82,5 +82,4 @@ function deactivate() {
   // Cleanup if needed
 }
 
-export { activate, deactivate };
 export default { activate, deactivate };
