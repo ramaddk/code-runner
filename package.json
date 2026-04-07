@@ -1,0 +1,14 @@
+{
+  "name": "code-runner",
+  "version": "0.1.0",
+  "description": "Run selected code or entire file directly in Fresh (PowerShell, Python, Node.js, Bash, etc.). Similar to PowerShell ISE.",
+  "main": "main.ts",
+  "type": "module",
+  "keywords": ["runner", "execute", "powershell", "python", "terminal"],
+  "author": "ramaddk",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ramaddk/code-runner.git"
+  }
+}
