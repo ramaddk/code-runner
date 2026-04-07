@@ -2,7 +2,7 @@
 // Run selected code or entire file (like PowerShell ISE)
 // Supports PowerShell, Python, Node.js, Bash, and more
 
-export function activate(api: any) {
+const activate = (api: any) => {
   const runCode = async () => {
     const config = api.editor.getConfig("code-runner");
     if (!config?.enabled) {
@@ -85,8 +85,10 @@ export function activate(api: any) {
   api.editor.bindKey("ctrl+enter", "code-runner.run");
 
   api.editor.setStatus("Code Runner plugin loaded ✓");
-}
+};
 
-export function deactivate() {
+const deactivate = () => {
   // Cleanup if needed
-}
+};
+
+export default { activate, deactivate };
