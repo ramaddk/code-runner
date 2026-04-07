@@ -91,4 +91,5 @@ function deactivate() {
   // Cleanup if needed
 }
 
-module.exports = { activate, deactivate };
+export { activate, deactivate };
+export default { activate, deactivate };
