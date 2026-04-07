@@ -31,7 +31,7 @@ const runCode = async () => {
   }
 
   const shell = config.defaultShell || "pwsh";
-  let cmd = [];
+  let cmd: string[] = [];
 
   switch (shell) {
     case "python3":
