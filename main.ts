@@ -1,4 +1,4 @@
-/// <reference path="./lib/fresh.d.ts" />
+declare var getEditor: () => any;
 
 const editor = getEditor();
 
