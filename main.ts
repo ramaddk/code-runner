@@ -103,14 +103,14 @@ registerHandler("codeRunnerRunSelection", codeRunnerRunSelection);
 // ---------------------------------------------------------------------------
 
 editor.registerCommand(
-  "code-runner.run-file",
+  "code_runner_run_file",
   "Code Runner: Run File",
   "codeRunnerRunFile",
   null
 );
 
 editor.registerCommand(
-  "code-runner.run-selection",
+  "code_runner_run_selection",
   "Code Runner: Run Selection",
   "codeRunnerRunSelection",
   null
