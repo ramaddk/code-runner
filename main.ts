@@ -1,72 +1,94 @@
-declare var getEditor: () => any;
-
+/// <reference path="./lib/fresh.d.ts" />
 const editor = getEditor();
 
-// Register configuration
-editor.registerConfig("code-runner", {
-  enabled: { type: "boolean", default: true, description: "Enable code runner" },
-  defaultShell: { type: "string", default: "pwsh", description: "Shell: pwsh, python3, node, bash" },
-  showOutputInPanel: { type: "boolean", default: true, description: "Show output in panel" },
-  timeoutMs: { type: "number", default: 30000, description: "Timeout ms" },
-  clearPanelBeforeRun: { type: "boolean", default: true, description: "Clear output" }
-});
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-const runCode = async () => {
-  const config = editor.getConfig("code-runner");
-  if (config.enabled === false) {
-    editor.setStatus("Code Runner disabled");
-    return;
-  }
+function getPluginConfig(): Record<string, unknown> {
+  const globalConfig = editor.getConfig() as Record<string, unknown>;
+  const packages = globalConfig?.packages as Record<string, unknown> | undefined;
+  const plugins = packages?.plugins as Record<string, unknown> | undefined;
+  const pluginEntry = plugins?.["code-runner"] as Record<string, unknown> | undefined;
+  const pluginConfig = pluginEntry?.config as Record<string, unknown> | undefined;
+  return pluginConfig ?? {};
+}
 
-  const buffer = editor.getCurrentBuffer();
-  if (!buffer) {
-    editor.setStatus("No active buffer");
-    return;
-  }
-
-  let code = buffer.getText();
-  const selection = buffer.getSelection();
-  if (selection && selection.start !== selection.end) {
-    code = buffer.getTextInRange(selection);
-  }
-
-  const shell = config.defaultShell || "pwsh";
-  let cmd: string[] = [];
-
+function buildCommand(filePath: string, shell: string): string[] {
   switch (shell) {
     case "python3":
     case "python":
-      cmd = ["python3", "-c", code];
-      break;
+      return ["python3", filePath];
     case "node":
-      cmd = ["node", "-e", code];
-      break;
+      return ["node", filePath];
     case "bash":
-      cmd = ["bash", "-c", code];
-      break;
+      return ["bash", filePath];
     default:
-      cmd = ["pwsh", "-NoProfile", "-Command", code];
+      return ["pwsh", "-NoProfile", "-File", filePath];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Run command handler
+// ---------------------------------------------------------------------------
+
+async function codeRunnerRun(): Promise<void> {
+  const config = getPluginConfig();
+
+  if (config.enabled === false) {
+    editor.setStatus("Code Runner: disabled");
+    return;
   }
 
-  editor.setStatus(`Running ${shell}...`);
+  const bufferId = editor.getActiveBufferId();
+  const filePath = editor.getBufferPath(bufferId);
+
+  if (!filePath) {
+    editor.setStatus("Code Runner: save the file first");
+    return;
+  }
+
+  const shell = (config.defaultShell as string) || "pwsh";
+  const cmd = buildCommand(filePath, shell);
+
+  editor.setStatus(`Code Runner: running ${shell}...`);
+  editor.debug(`Code Runner: ${cmd.join(" ")}`);
 
   try {
-    const result = await editor.spawnProcess(cmd[0], cmd.slice(1), {
-      timeoutMs: config.timeoutMs || 30000
-    });
+    const result = await editor.spawnProcess(cmd[0], cmd.slice(1), null);
+    const stdout = result.stdout || "";
+    const stderr = result.stderr || "";
+    const output = stdout + (stderr ? "\n--- STDERR ---\n" + stderr : "") || "(no output)";
 
-    if (result) {
-      const output = (result.stdout || "") + (result.stderr ? "\n--- STDERR ---\n" + result.stderr : "");
-      if (config.showOutputInPanel !== false) {
-        editor.createPanel("Code Output", output || "(No output)");
-      }
-      editor.setStatus(result.exit_code === 0 ? "✓ Done" : `✗ Exit ${result.exit_code}`);
+    if (config.showOutputInPanel !== false) {
+      await editor.createVirtualBufferInSplit({
+        name: "*Code Output*",
+        mode: "special",
+        read_only: true,
+        entries: [{ text: output }],
+        ratio: 0.35,
+        panel_id: "code-runner-output",
+      });
     }
-  } catch (err) {
-    editor.setStatus(`Error: ${err}`);
-  }
-};
 
-editor.registerCommand("code-runner.run", "Run Code", runCode);
-editor.bindKey("ctrl+shift+r", "code-runner.run");
-editor.bindKey("ctrl+enter", "code-runner.run");
+    editor.setStatus(
+      result.exit_code === 0 ? "Code Runner: done" : `Code Runner: exit ${result.exit_code}`
+    );
+  } catch (err) {
+    editor.setStatus(`Code Runner: error - ${err}`);
+  }
+}
+registerHandler("codeRunnerRun", codeRunnerRun);
+
+// ---------------------------------------------------------------------------
+// Registration
+// ---------------------------------------------------------------------------
+
+editor.registerCommand(
+  "code-runner.run",
+  "Code Runner: Run File",
+  "codeRunnerRun",
+  null
+);
+
+editor.debug("Code Runner plugin loaded");

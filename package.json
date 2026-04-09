@@ -2,13 +2,39 @@
   "name": "code-runner",
   "version": "0.1.0",
   "description": "Run selected code or entire file directly in Fresh (PowerShell, Python, Node.js, Bash, etc.). Similar to PowerShell ISE.",
-  "main": "main.ts",
   "type": "plugin",
-  "keywords": ["runner", "execute", "powershell", "python", "terminal"],
   "author": "ramaddk",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ramaddk/code-runner.git"
+  "repository": "https://github.com/ramaddk/code-runner.git",
+  "keywords": ["runner", "execute", "powershell", "python", "terminal"],
+  "fresh": {
+    "entry": "main.ts",
+    "config_schema": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable the Code Runner plugin"
+      },
+      "defaultShell": {
+        "type": "string",
+        "default": "pwsh",
+        "description": "Default shell to use: pwsh, python3, node, bash"
+      },
+      "showOutputInPanel": {
+        "type": "boolean",
+        "default": true,
+        "description": "Show output in a split panel instead of the status bar"
+      },
+      "timeoutMs": {
+        "type": "number",
+        "default": 30000,
+        "description": "Maximum execution time in milliseconds"
+      },
+      "clearPanelBeforeRun": {
+        "type": "boolean",
+        "default": true,
+        "description": "Clear the output panel before each run"
+      }
+    }
   }
 }
