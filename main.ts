@@ -83,7 +83,6 @@ async function codeRunnerRunSelection(): Promise<void> {
     return;
   }
 
-  // Read file and slice selection (byte offsets ~ char indices for ASCII)
   const content = await editor.readFile(filePath);
   const selected = content.slice(cursor.selection.start, cursor.selection.end);
   if (!selected.trim()) {
@@ -91,7 +90,6 @@ async function codeRunnerRunSelection(): Promise<void> {
     return;
   }
 
-  // Write selection to a temp file with same extension, then run it
   const ext = filePath.split(".").pop() ?? "ps1";
   const tempPath = `/tmp/fresh-runner-${Date.now()}.${ext}`;
   await editor.writeFile(tempPath, selected);
