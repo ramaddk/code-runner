@@ -1,30 +1,19 @@
-/// <reference path="./lib/fresh.d.ts" />
 const editor = getEditor();
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Shell detection by file extension
 // ---------------------------------------------------------------------------
 
-function getPluginConfig(): Record<string, unknown> {
-  const globalConfig = editor.getConfig() as Record<string, unknown>;
-  const packages = globalConfig?.packages as Record<string, unknown> | undefined;
-  const plugins = packages?.plugins as Record<string, unknown> | undefined;
-  const pluginEntry = plugins?.["code-runner"] as Record<string, unknown> | undefined;
-  const pluginConfig = pluginEntry?.config as Record<string, unknown> | undefined;
-  return pluginConfig ?? {};
-}
-
-function buildCommand(filePath: string, shell: string): string[] {
-  switch (shell) {
-    case "python3":
-    case "python":
-      return ["python3", filePath];
-    case "node":
-      return ["node", filePath];
-    case "bash":
-      return ["bash", filePath];
-    default:
-      return ["pwsh", "-NoProfile", "-File", filePath];
+function detectShell(filePath: string): string[] {
+  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
+  switch (ext) {
+    case "ps1":  return ["pwsh", "-NoProfile", "-File"];
+    case "py":   return ["python3"];
+    case "js":   return ["node"];
+    case "ts":   return ["npx", "ts-node"];
+    case "sh":   return ["bash"];
+    case "rb":   return ["ruby"];
+    default:     return ["pwsh", "-NoProfile", "-File"];
   }
 }
 
@@ -33,49 +22,31 @@ function buildCommand(filePath: string, shell: string): string[] {
 // ---------------------------------------------------------------------------
 
 async function codeRunnerRun(): Promise<void> {
-  const config = getPluginConfig();
-
-  if (config.enabled === false) {
-    editor.setStatus("Code Runner: disabled");
-    return;
-  }
-
   const bufferId = editor.getActiveBufferId();
   const filePath = editor.getBufferPath(bufferId);
 
   if (!filePath) {
-    editor.setStatus("Code Runner: save the file first");
+    editor.setStatus("Code Runner: open and save a file first");
     return;
   }
 
-  const shell = (config.defaultShell as string) || "pwsh";
-  const cmd = buildCommand(filePath, shell);
-
-  editor.setStatus(`Code Runner: running ${shell}...`);
+  const shellCmd = detectShell(filePath);
+  const cmd = [...shellCmd, filePath];
+  editor.setStatus(`Code Runner: running with ${shellCmd[0]}...`);
   editor.debug(`Code Runner: ${cmd.join(" ")}`);
 
   try {
-    const result = await editor.spawnProcess(cmd[0], cmd.slice(1), null);
-    const stdout = result.stdout || "";
-    const stderr = result.stderr || "";
-    const output = stdout + (stderr ? "\n--- STDERR ---\n" + stderr : "") || "(no output)";
-
-    if (config.showOutputInPanel !== false) {
-      await editor.createVirtualBufferInSplit({
-        name: "*Code Output*",
-        mode: "special",
-        read_only: true,
-        entries: [{ text: output }],
-        ratio: 0.35,
-        panel_id: "code-runner-output",
-      });
-    }
-
-    editor.setStatus(
-      result.exit_code === 0 ? "Code Runner: done" : `Code Runner: exit ${result.exit_code}`
-    );
+    const term = await editor.createTerminal({
+      direction: "horizontal",
+      ratio: 0.35,
+      focus: true,
+    });
+    const quotedPath = `"${filePath}"`;
+    const cmdStr = [...shellCmd, quotedPath].join(" ");
+    await editor.sendTerminalInput(term.terminalId, cmdStr + "\n");
   } catch (err) {
     editor.setStatus(`Code Runner: error - ${err}`);
+    editor.debug(`Code Runner error: ${err}`);
   }
 }
 registerHandler("codeRunnerRun", codeRunnerRun);
