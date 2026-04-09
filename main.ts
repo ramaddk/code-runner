@@ -70,6 +70,8 @@ globalThis.code_runner_run_file = codeRunnerRunFile;
 // ---------------------------------------------------------------------------
 
 async function codeRunnerRunSelection() {
+  editor.setStatus("Code Runner: F8 triggered");
+
   const bufferId = editor.getActiveBufferId();
   const filePath = editor.getBufferPath(bufferId);
   if (!filePath) {
@@ -78,13 +80,20 @@ async function codeRunnerRunSelection() {
   }
 
   const cursor = editor.getCursorPosition();
+  editor.setStatus(`Code Runner: sel=${JSON.stringify(cursor.selection)}`);
+
   if (!cursor.selection || cursor.selection.start === cursor.selection.end) {
     editor.setStatus("Code Runner: no text selected");
     return;
   }
 
+  editor.setStatus("Code Runner: reading file...");
   const content = await editor.readFile(filePath);
+  editor.setStatus(`Code Runner: file read, length=${content.length}`);
+
   const selected = content.slice(cursor.selection.start, cursor.selection.end);
+  editor.setStatus(`Code Runner: selected ${selected.length} chars`);
+
   if (!selected.trim()) {
     editor.setStatus("Code Runner: selection is empty");
     return;
@@ -92,8 +101,10 @@ async function codeRunnerRunSelection() {
 
   const ext = filePath.split(".").pop() ?? "ps1";
   const tempPath = `/tmp/fresh-runner-${Date.now()}.${ext}`;
+  editor.setStatus(`Code Runner: writing ${tempPath}`);
   await editor.writeFile(tempPath, selected);
 
+  editor.setStatus("Code Runner: launching...");
   await runInTerminal(detectShell(filePath), tempPath);
 }
 globalThis.code_runner_run_selection = codeRunnerRunSelection;
