@@ -63,7 +63,7 @@ async function codeRunnerRunFile() {
   }
   await runInTerminal(detectShell(filePath), filePath);
 }
-registerHandler("codeRunnerRunFile", codeRunnerRunFile);
+globalThis.codeRunnerRunFile = codeRunnerRunFile;
 
 // ---------------------------------------------------------------------------
 // Run Selection
@@ -96,7 +96,7 @@ async function codeRunnerRunSelection() {
 
   await runInTerminal(detectShell(filePath), tempPath);
 }
-registerHandler("codeRunnerRunSelection", codeRunnerRunSelection);
+globalThis.codeRunnerRunSelection = codeRunnerRunSelection;
 
 // ---------------------------------------------------------------------------
 // Registration
