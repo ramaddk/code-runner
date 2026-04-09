@@ -4,7 +4,10 @@ const editor = getEditor();
 // State - reuse terminal across runs
 // ---------------------------------------------------------------------------
 
-let activeTerminalId = null;
+// Persist terminal ID across calls (module state may reset per invocation)
+if (typeof globalThis._codeRunnerTerminalId === "undefined") {
+  globalThis._codeRunnerTerminalId = null;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,16 +27,16 @@ function detectShell(filePath) {
 }
 
 async function getOrCreateTerminal() {
-  if (activeTerminalId !== null) {
-    return activeTerminalId;
+  if (globalThis._codeRunnerTerminalId !== null) {
+    return globalThis._codeRunnerTerminalId;
   }
   const term = await editor.createTerminal({
     direction: "horizontal",
     ratio: 0.35,
     focus: true,
   });
-  activeTerminalId = term.terminalId;
-  return activeTerminalId;
+  globalThis._codeRunnerTerminalId = term.terminalId;
+  return globalThis._codeRunnerTerminalId;
 }
 
 async function runInTerminal(shellCmd, filePath) {
@@ -44,7 +47,7 @@ async function runInTerminal(shellCmd, filePath) {
     await editor.sendTerminalInput(tid, cmdStr + "\n");
     editor.setStatus(`Code Runner: running with ${shellCmd[0]}`);
   } catch (err) {
-    activeTerminalId = null; // terminal was closed, reset
+    globalThis._codeRunnerTerminalId = null; // terminal was closed, reset
     editor.setStatus(`Code Runner: error - ${err}`);
     editor.debug(`Code Runner error: ${err}`);
   }
