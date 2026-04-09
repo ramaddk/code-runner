@@ -1,64 +1,120 @@
 const editor = getEditor();
 
 // ---------------------------------------------------------------------------
-// Shell detection by file extension
+// State - reuse terminal across runs
+// ---------------------------------------------------------------------------
+
+let activeTerminalId: number | null = null;
+
+// ---------------------------------------------------------------------------
+// Helpers
 // ---------------------------------------------------------------------------
 
 function detectShell(filePath: string): string[] {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
   switch (ext) {
-    case "ps1":  return ["pwsh", "-NoProfile", "-File"];
-    case "py":   return ["python3"];
-    case "js":   return ["node"];
-    case "ts":   return ["npx", "ts-node"];
-    case "sh":   return ["bash"];
-    case "rb":   return ["ruby"];
-    default:     return ["pwsh", "-NoProfile", "-File"];
+    case "ps1": return ["pwsh", "-NoProfile", "-File"];
+    case "py":  return ["python3"];
+    case "js":  return ["node"];
+    case "ts":  return ["npx", "ts-node"];
+    case "sh":  return ["bash"];
+    case "rb":  return ["ruby"];
+    default:    return ["pwsh", "-NoProfile", "-File"];
   }
 }
 
-// ---------------------------------------------------------------------------
-// Run command handler
-// ---------------------------------------------------------------------------
-
-async function codeRunnerRun(): Promise<void> {
-  const bufferId = editor.getActiveBufferId();
-  const filePath = editor.getBufferPath(bufferId);
-
-  if (!filePath) {
-    editor.setStatus("Code Runner: open and save a file first");
-    return;
+async function getOrCreateTerminal(): Promise<number> {
+  if (activeTerminalId !== null) {
+    return activeTerminalId;
   }
+  const term = await editor.createTerminal({
+    direction: "horizontal",
+    ratio: 0.35,
+    focus: true,
+  });
+  activeTerminalId = term.terminalId;
+  return activeTerminalId;
+}
 
-  const shellCmd = detectShell(filePath);
-  const cmd = [...shellCmd, filePath];
-  editor.setStatus(`Code Runner: running with ${shellCmd[0]}...`);
-  editor.debug(`Code Runner: ${cmd.join(" ")}`);
-
+async function runInTerminal(shellCmd: string[], filePath: string): Promise<void> {
+  const cmdStr = [...shellCmd, `"${filePath}"`].join(" ");
+  editor.debug(`Code Runner: ${cmdStr}`);
   try {
-    const term = await editor.createTerminal({
-      direction: "horizontal",
-      ratio: 0.35,
-      focus: true,
-    });
-    const quotedPath = `"${filePath}"`;
-    const cmdStr = [...shellCmd, quotedPath].join(" ");
-    await editor.sendTerminalInput(term.terminalId, cmdStr + "\n");
+    const tid = await getOrCreateTerminal();
+    await editor.sendTerminalInput(tid, cmdStr + "\n");
+    editor.setStatus(`Code Runner: running with ${shellCmd[0]}`);
   } catch (err) {
+    activeTerminalId = null; // terminal was closed, reset
     editor.setStatus(`Code Runner: error - ${err}`);
     editor.debug(`Code Runner error: ${err}`);
   }
 }
-registerHandler("codeRunnerRun", codeRunnerRun);
+
+// ---------------------------------------------------------------------------
+// Run File
+// ---------------------------------------------------------------------------
+
+async function codeRunnerRunFile(): Promise<void> {
+  const bufferId = editor.getActiveBufferId();
+  const filePath = editor.getBufferPath(bufferId);
+  if (!filePath) {
+    editor.setStatus("Code Runner: save the file first");
+    return;
+  }
+  await runInTerminal(detectShell(filePath), filePath);
+}
+registerHandler("codeRunnerRunFile", codeRunnerRunFile);
+
+// ---------------------------------------------------------------------------
+// Run Selection
+// ---------------------------------------------------------------------------
+
+async function codeRunnerRunSelection(): Promise<void> {
+  const bufferId = editor.getActiveBufferId();
+  const filePath = editor.getBufferPath(bufferId);
+  if (!filePath) {
+    editor.setStatus("Code Runner: save the file first");
+    return;
+  }
+
+  const cursor = editor.getCursorPosition();
+  if (!cursor.selection || cursor.selection.start === cursor.selection.end) {
+    editor.setStatus("Code Runner: no text selected");
+    return;
+  }
+
+  // Read file and slice selection (byte offsets ~ char indices for ASCII)
+  const content = await editor.readFile(filePath);
+  const selected = content.slice(cursor.selection.start, cursor.selection.end);
+  if (!selected.trim()) {
+    editor.setStatus("Code Runner: selection is empty");
+    return;
+  }
+
+  // Write selection to a temp file with same extension, then run it
+  const ext = filePath.split(".").pop() ?? "ps1";
+  const tempPath = `/tmp/fresh-runner-${Date.now()}.${ext}`;
+  await editor.writeFile(tempPath, selected);
+
+  await runInTerminal(detectShell(filePath), tempPath);
+}
+registerHandler("codeRunnerRunSelection", codeRunnerRunSelection);
 
 // ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
 
 editor.registerCommand(
-  "code-runner.run",
+  "code-runner.run-file",
   "Code Runner: Run File",
-  "codeRunnerRun",
+  "codeRunnerRunFile",
+  null
+);
+
+editor.registerCommand(
+  "code-runner.run-selection",
+  "Code Runner: Run Selection",
+  "codeRunnerRunSelection",
   null
 );
 
