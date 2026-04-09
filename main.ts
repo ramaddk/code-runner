@@ -63,7 +63,7 @@ async function codeRunnerRunFile() {
   }
   await runInTerminal(detectShell(filePath), filePath);
 }
-globalThis.codeRunnerRunFile = codeRunnerRunFile;
+globalThis.code_runner_run_file = codeRunnerRunFile;
 
 // ---------------------------------------------------------------------------
 // Run Selection
@@ -96,7 +96,7 @@ async function codeRunnerRunSelection() {
 
   await runInTerminal(detectShell(filePath), tempPath);
 }
-globalThis.codeRunnerRunSelection = codeRunnerRunSelection;
+globalThis.code_runner_run_selection = codeRunnerRunSelection;
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -105,14 +105,14 @@ globalThis.codeRunnerRunSelection = codeRunnerRunSelection;
 editor.registerCommand(
   "code_runner_run_file",
   "Code Runner: Run File",
-  "codeRunnerRunFile",
+  "code_runner_run_file",
   null
 );
 
 editor.registerCommand(
   "code_runner_run_selection",
   "Code Runner: Run Selection",
-  "codeRunnerRunSelection",
+  "code_runner_run_selection",
   null
 );
 
