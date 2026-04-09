@@ -4,13 +4,13 @@ const editor = getEditor();
 // State - reuse terminal across runs
 // ---------------------------------------------------------------------------
 
-let activeTerminalId: number | null = null;
+let activeTerminalId = null;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function detectShell(filePath: string): string[] {
+function detectShell(filePath) {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
   switch (ext) {
     case "ps1": return ["pwsh", "-NoProfile", "-File"];
@@ -23,7 +23,7 @@ function detectShell(filePath: string): string[] {
   }
 }
 
-async function getOrCreateTerminal(): Promise<number> {
+async function getOrCreateTerminal() {
   if (activeTerminalId !== null) {
     return activeTerminalId;
   }
@@ -36,7 +36,7 @@ async function getOrCreateTerminal(): Promise<number> {
   return activeTerminalId;
 }
 
-async function runInTerminal(shellCmd: string[], filePath: string): Promise<void> {
+async function runInTerminal(shellCmd, filePath) {
   const cmdStr = [...shellCmd, `"${filePath}"`].join(" ");
   editor.debug(`Code Runner: ${cmdStr}`);
   try {
@@ -54,7 +54,7 @@ async function runInTerminal(shellCmd: string[], filePath: string): Promise<void
 // Run File
 // ---------------------------------------------------------------------------
 
-async function codeRunnerRunFile(): Promise<void> {
+async function codeRunnerRunFile() {
   const bufferId = editor.getActiveBufferId();
   const filePath = editor.getBufferPath(bufferId);
   if (!filePath) {
@@ -69,7 +69,7 @@ registerHandler("codeRunnerRunFile", codeRunnerRunFile);
 // Run Selection
 // ---------------------------------------------------------------------------
 
-async function codeRunnerRunSelection(): Promise<void> {
+async function codeRunnerRunSelection() {
   const bufferId = editor.getActiveBufferId();
   const filePath = editor.getBufferPath(bufferId);
   if (!filePath) {
