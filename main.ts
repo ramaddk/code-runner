@@ -33,7 +33,7 @@ async function getOrCreateTerminal() {
   const term = await editor.createTerminal({
     direction: "horizontal",
     ratio: 0.35,
-    focus: true,
+    focus: false, // Don't automatically focus to avoid extra buffer tab
   });
   globalThis._codeRunnerTerminalId = term.terminalId;
   return globalThis._codeRunnerTerminalId;
@@ -45,6 +45,8 @@ async function runInTerminal(shellCmd, filePath) {
   try {
     const tid = await getOrCreateTerminal();
     await editor.sendTerminalInput(tid, cmdStr + "\n");
+    // Focus the terminal after running
+    await editor.focusTerminal(tid);
     editor.setStatus(`Code Runner: running with ${shellCmd[0]}`);
   } catch (err) {
     globalThis._codeRunnerTerminalId = null; // terminal was closed, reset
